@@ -1,0 +1,42 @@
+# Python Bytecode & Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# PyInstaller Build & Dist Artifacts (For GitHub Releases)
+build/
+dist/
+_internal/
+PowerMonitorPC.exe
+*.spec
+*.zip
+
+# SQLite Database (Personal usage data)
+*.db
+power_data.db
+
+# Logs & Temporary Files
+*.log
+scratch/
+dump_sensors.py
+
+# Environments
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE & Editor Settings
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS Generated Files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/

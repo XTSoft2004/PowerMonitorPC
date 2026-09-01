@@ -1,0 +1,11 @@
+{
+  "server_port": 38472,
+  "pricing_mode": "evn_tiered",
+  "electricity_rate_vnd_kwh": 2500,
+  "lhm_url": "http://localhost:8085/data.json",
+  "poll_interval_seconds": 3,
+  "system_base_power_w": 30.0,
+  "psu_efficiency_factor": 1.12,
+  "lhm_exe_path": "LibreHardwareMonitor.NET.10/LibreHardwareMonitor.exe",
+  "db_path": "power_data.db"
+}

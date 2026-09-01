@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hệ Thống Theo Dõi Điện Năng PC</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+  <div class="dashboard-container">
+    <!-- Header -->
+    <header>
+      <div class="brand">
+        <div class="brand-icon">⚡</div>
+        <div class="brand-title">
+          <h1>Power Monitor PC</h1>
+          <p>Hệ thống đo công suất & tự động thống kê điện năng</p>
+        </div>
+      </div>
+      <div class="header-right">
+        <div id="statusBadge" class="status-badge disconnected">
+          <span class="dot"></span>
+          <span id="statusText">Đang kiểm tra...</span>
+        </div>
+        <button class="btn" onclick="openConfigModal()">⚙️ Cấu hình</button>
+        <button class="btn" onclick="exportCSV()">📥 Xuất CSV</button>
+      </div>
+    </header>
+
+    <!-- Status Warning Banner if LHM disconnected -->
+    <div id="warningBanner" class="banner-warning" style="display: none;">
+      ⚠️ <span id="warningText">Chưa kết nối LibreHardwareMonitor! Vui lòng khởi động LibreHardwareMonitor và bật "Remote Web Server".</span>
+    </div>
+
+    <!-- Stats Cards Grid -->
+    <div class="stats-grid">
+      <!-- Live Watt Card -->
+      <div class="stat-card cyan">
+        <div class="stat-header">
+          <span class="stat-title">Công Suất Tiêu Thụ Live</span>
+          <span class="stat-icon">🔥</span>
+        </div>
+        <div class="stat-value"><span id="valTotalWatt">0.0</span> <span style="font-size: 1.1rem; color: var(--text-muted);">W</span></div>
+        <div class="stat-sub">
+          <span class="sub-tag">CPU: <strong id="valCpuWatt" style="color: var(--accent-cyan);">0.0 W</strong></span>
+          <span class="sub-tag">GPU: <strong id="valGpuWatt" style="color: var(--accent-purple);">0.0 W</strong></span>
+          <span class="sub-tag">Khác: <strong id="valOtherWatt" style="color: var(--text-muted);">0.0 W</strong></span>
+        </div>
+      </div>
+
+      <!-- Today kWh Card -->
+      <div class="stat-card green">
+        <div class="stat-header">
+          <span class="stat-title">Số Điện Hôm Nay</span>
+          <span class="stat-icon">⚡</span>
+        </div>
+        <div class="stat-value"><span id="valTodayKwh">0.000</span> <span style="font-size: 1.1rem; color: var(--text-muted);">kWh</span></div>
+        <div class="stat-sub">
+          <span class="sub-tag">Tự lưu khi tắt/bật máy: <strong>Hoạt động</strong></span>
+        </div>
+      </div>
+
+      <!-- Today Cost Card -->
+      <div class="stat-card amber">
+        <div class="stat-header">
+          <span class="stat-title">Tiền Điện Tạm Tính</span>
+          <span class="stat-icon">💰</span>
+        </div>
+        <div class="stat-value"><span id="valTodayCost">0</span> <span style="font-size: 1.1rem; color: var(--text-muted);">VND</span></div>
+        <div class="stat-sub">
+          <span class="sub-tag">Đơn giá: <strong id="valRate">2,500</strong> đ/kWh</span>
+        </div>
+      </div>
+
+      <!-- Indices Card -->
+      <div class="stat-card purple">
+        <div class="stat-header">
+          <span class="stat-title">Chỉ Số Trong Ngày</span>
+          <span class="stat-icon">📊</span>
+        </div>
+        <div class="stat-value" style="font-size: 1.5rem;" id="valUptime">0h 0m</div>
+        <div class="stat-sub">
+          <span class="sub-tag">Trung bình: <strong id="valAvgWatt">0 W</strong></span>
+          <span class="sub-tag">Đỉnh: <strong id="valPeakWatt">0 W</strong></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts Grid -->
+    <div class="charts-grid">
+      <!-- Live Wattage Line Chart -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">📈 Biến Thiên Công Suất Tiêu Thụ (Real-time Watts)</div>
+        </div>
+        <div class="chart-container">
+          <canvas id="liveChart"></canvas>
+        </div>
+      </div>
+
+      <!-- History Daily kWh Bar Chart -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">📅 Thống Kê Số Điện Theo Ngày (kWh)</div>
+        </div>
+        <div class="chart-container">
+          <canvas id="historyChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="configModal" class="modal-overlay">
+    <div class="modal-box">
+      <h2>⚙️ Cấu Hình Đơn Giá & Hệ Thống</h2>
+      <div class="form-group">
+        <label>Chế Độ Tính Tiền Điện</label>
+        <select id="inputPricingMode" style="width:100%; background:rgba(255,255,255,0.05); border:1px solid var(--border-color); color:var(--text-main); padding:10px; border-radius:10px;" onchange="togglePricingInputs()">
+          <option value="evn_tiered">🏛️ Biểu giá 6 bậc thang EVN 2025/2026 (Bộ Công Thương)</option>
+          <option value="fixed">💵 Giá cố định (Đồng / kWh)</option>
+        </select>
+      </div>
+      <div class="form-group" id="groupFixedRate" style="display:none;">
+        <label>Đơn Giá Cố Định (VND / kWh)</label>
+        <input type="number" id="inputRate" value="2500" step="50">
+      </div>
+      <div class="form-group">
+        <label>Chu Kỳ Đọc Dữ Liệu (Giây)</label>
+        <input type="number" id="inputInterval" value="3" min="1" max="60">
+      </div>
+      <div class="form-group">
+        <label>Công Suất Nền Máy Tính (Watt) (Mainboard, Ram, SSD, Quạt)</label>
+        <input type="number" id="inputBasePower" value="30" min="0" max="200">
+      </div>
+      <div class="form-group">
+        <label>Hệ Số Tổn Hao Bộ Nguồn PSU (Mặc định 1.12 cho Nguồn 80 Plus)</label>
+        <input type="number" id="inputPsuFactor" value="1.12" step="0.01" min="1.00" max="1.50">
+      </div>
+      <div class="modal-actions">
+        <button class="btn" onclick="closeConfigModal()">Hủy</button>
+        <button class="btn" style="background: var(--accent-green); color: #fff;" onclick="saveConfig()">Lưu Thay Đổi</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let liveChart, historyChart;
+    let configData = {};
+
+    function formatNumber(num, decimals = 2) {
+      return (num || 0).toLocaleString('vi-VN', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+    }
+
+    function formatVND(num) {
+      return Math.round(num || 0).toLocaleString('vi-VN');
+    }
+
+    function formatTime(seconds) {
+      seconds = Math.floor(seconds || 0);
+      const hrs = Math.floor(seconds / 3600);
+      const mins = Math.floor((seconds % 3600) / 60);
+      const secs = seconds % 60;
+      if (hrs > 0) return `${hrs}h ${mins}m ${secs}s`;
+      return `${mins}m ${secs}s`;
+    }
+
+    function initCharts() {
+      // Live Watts Chart
+      const ctxLive = document.getElementById('liveChart').getContext('2d');
+      liveChart = new Chart(ctxLive, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [
+            {
+              label: 'Tổng (Watts)',
+              data: [],
+              borderColor: '#00f2fe',
+              backgroundColor: 'rgba(0, 242, 254, 0.1)',
+              fill: true,
+              tension: 0.35,
+              borderWidth: 2
+            },
+            {
+              label: 'CPU (Watts)',
+              data: [],
+              borderColor: '#4facfe',
+              borderDash: [4, 4],
+              tension: 0.35,
+              borderWidth: 1.5
+            },
+            {
+              label: 'GPU (Watts)',
+              data: [],
+              borderColor: '#a855f7',
+              borderDash: [4, 4],
+              tension: 0.35,
+              borderWidth: 1.5
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: false,
+          scales: {
+            x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
+            y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' }, beginAtZero: true }
+          },
+          plugins: { legend: { labels: { color: '#f1f5f9' } } }
+        }
+      });
+
+      // History Bar Chart
+      const ctxHistory = document.getElementById('historyChart').getContext('2d');
+      historyChart = new Chart(ctxHistory, {
+        type: 'bar',
+        data: {
+          labels: [],
+          datasets: [{
+            label: 'Số Điện (kWh)',
+            data: [],
+            backgroundColor: 'rgba(16, 185, 129, 0.7)',
+            borderColor: '#10b981',
+            borderWidth: 1,
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: { grid: { display: false }, ticks: { color: '#94a3b8' } },
+            y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' }, beginAtZero: true }
+          },
+          plugins: { legend: { display: false } }
+        }
+      });
+    }
+
+    async function updateLive() {
+      try {
+        const res = await fetch('/api/live');
+        const data = await res.json();
+
+        // Update Status
+        const statusBadge = document.getElementById('statusBadge');
+        const statusText = document.getElementById('statusText');
+        const warningBanner = document.getElementById('warningBanner');
+        const warningText = document.getElementById('warningText');
+
+        if (data.connected) {
+          statusBadge.className = 'status-badge connected';
+          statusText.innerText = 'Đã kết nối LHM';
+          warningBanner.style.display = 'none';
+        } else {
+          statusBadge.className = 'status-badge disconnected';
+          statusText.innerText = 'Chưa kết nối LHM';
+          warningText.innerText = data.status_msg || 'Chưa nhận dữ liệu công suất từ LibreHardwareMonitor!';
+          warningBanner.style.display = 'flex';
+        }
+
+        // Update Numbers
+        document.getElementById('valTotalWatt').innerText = formatNumber(data.total_power_w, 1);
+        document.getElementById('valCpuWatt').innerText = formatNumber(data.cpu_power_w, 1) + ' W';
+        document.getElementById('valGpuWatt').innerText = formatNumber(data.gpu_power_w, 1) + ' W';
+        document.getElementById('valOtherWatt').innerText = formatNumber(data.other_power_w, 1) + ' W';
+
+        document.getElementById('valTodayKwh').innerText = formatNumber(data.today_kwh, 3);
+        document.getElementById('valTodayCost').innerText = formatVND(data.today_cost_vnd);
+        document.getElementById('valAvgWatt').innerText = formatNumber(data.today_avg_w, 1) + ' W';
+        document.getElementById('valPeakWatt').innerText = formatNumber(data.today_peak_w, 1) + ' W';
+        document.getElementById('valUptime').innerText = formatTime(data.today_active_seconds);
+      } catch (err) {
+        console.error('Fetch live error', err);
+      }
+    }
+
+    async function updateRecentChart() {
+      try {
+        const res = await fetch('/api/recent?limit=40');
+        const logs = await res.json();
+        
+        liveChart.data.labels = logs.map(l => l.timestamp.split(' ')[1]);
+        liveChart.data.datasets[0].data = logs.map(l => l.total_power_w);
+        liveChart.data.datasets[1].data = logs.map(l => l.cpu_power_w);
+        liveChart.data.datasets[2].data = logs.map(l => l.gpu_power_w);
+        liveChart.update();
+      } catch (err) {
+        console.error('Fetch recent error', err);
+      }
+    }
+
+    async function updateHistoryChart() {
+      try {
+        const res = await fetch('/api/history?days=14');
+        const history = await res.json();
+        
+        // Sort ascending by date
+        const sorted = history.reverse();
+        historyChart.data.labels = sorted.map(h => h.date);
+        historyChart.data.datasets[0].data = sorted.map(h => h.total_kwh);
+        historyChart.update();
+      } catch (err) {
+        console.error('Fetch history error', err);
+      }
+    }
+
+    async function fetchConfig() {
+      try {
+        const res = await fetch('/api/config');
+        configData = await res.json();
+        const mode = configData.pricing_mode || 'evn_tiered';
+        document.getElementById('inputPricingMode').value = mode;
+        if (mode === 'evn_tiered') {
+          document.getElementById('valRate').innerText = '6 Bậc EVN (+8% VAT)';
+        } else {
+          document.getElementById('valRate').innerText = formatVND(configData.electricity_rate_vnd_kwh) + ' đ/kWh';
+        }
+        document.getElementById('inputRate').value = configData.electricity_rate_vnd_kwh || 2500;
+        document.getElementById('inputInterval').value = configData.poll_interval_seconds || 3;
+        document.getElementById('inputBasePower').value = configData.system_base_power_w || 30;
+        document.getElementById('inputPsuFactor').value = configData.psu_efficiency_factor || 1.12;
+        togglePricingInputs();
+      } catch (err) {
+        console.error('Fetch config error', err);
+      }
+    }
+
+    function togglePricingInputs() {
+      const mode = document.getElementById('inputPricingMode').value;
+      const groupFixed = document.getElementById('groupFixedRate');
+      if (mode === 'fixed') {
+        groupFixed.style.display = 'block';
+      } else {
+        groupFixed.style.display = 'none';
+      }
+    }
+
+    function openConfigModal() {
+      document.getElementById('configModal').classList.add('active');
+    }
+
+    function closeConfigModal() {
+      document.getElementById('configModal').classList.remove('active');
+    }
+
+    async function saveConfig() {
+      const pricingMode = document.getElementById('inputPricingMode').value;
+      const rate = parseFloat(document.getElementById('inputRate').value);
+      const interval = parseInt(document.getElementById('inputInterval').value);
+      const basePower = parseFloat(document.getElementById('inputBasePower').value);
+      const psuFactor = parseFloat(document.getElementById('inputPsuFactor').value);
+
+      await fetch('/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pricing_mode: pricingMode,
+          electricity_rate_vnd_kwh: rate,
+          poll_interval_seconds: interval,
+          system_base_power_w: basePower,
+          psu_efficiency_factor: psuFactor
+        })
+      });
+
+      closeConfigModal();
+      await fetchConfig();
+      await updateLive();
+    }
+
+    function exportCSV() {
+      window.location.href = '/api/export';
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initCharts();
+      fetchConfig();
+      updateLive();
+      updateRecentChart();
+      updateHistoryChart();
+
+      setInterval(updateLive, 2000);
+      setInterval(updateRecentChart, 3000);
+      setInterval(updateHistoryChart, 30000);
+    });
+  </script>
+</body>
+</html>
