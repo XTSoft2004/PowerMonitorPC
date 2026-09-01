@@ -28,7 +28,7 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install flask psutil pystray pillow numpy pyinstaller
+          pip install -r requirements.txt
 
       - name: Build Standalone Executable & Package ZIP
         run: |

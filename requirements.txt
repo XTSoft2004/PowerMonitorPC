@@ -1,0 +1,6 @@
+flask
+psutil
+pystray
+pillow
+numpy
+pyinstaller
