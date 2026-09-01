@@ -1,0 +1,63 @@
+name: Auto Build & Release Power Monitor PC
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flask psutil pystray pillow numpy pyinstaller
+
+      - name: Build Standalone Executable & Package ZIP
+        run: |
+          pyinstaller --noconfirm --onedir --windowed --name PowerMonitorPC --add-data "templates;templates" --add-data "static;static" --add-data "config.json;." server.py
+          if (Test-Path "LibreHardwareMonitor.NET.10") {
+            Copy-Item -Path "LibreHardwareMonitor.NET.10" -Destination "dist\PowerMonitorPC\LibreHardwareMonitor.NET.10" -Recurse -Force
+          }
+          if (Test-Path "scripts\Chay_Ngay.bat") {
+            Copy-Item -Path "scripts\Chay_Ngay.bat" -Destination "dist\PowerMonitorPC\Chay_Ngay.bat" -Force
+          } elseif (Test-Path "Chay_Ngay.bat") {
+            Copy-Item -Path "Chay_Ngay.bat" -Destination "dist\PowerMonitorPC\Chay_Ngay.bat" -Force
+          }
+          Compress-Archive -Path "dist\PowerMonitorPC\*" -DestinationPath "PowerMonitorPC.zip" -Force
+
+      - name: Create GitHub Release & Upload Asset
+        uses: softprops/action-gh-release@v1
+        with:
+          files: PowerMonitorPC.zip
+          name: "Power Monitor PC ${{ github.ref_name }}"
+          body: |
+            ## 🚀 Release ${{ github.ref_name }} Auto-Built by GitHub Actions
+            
+            ### ✨ Features Included:
+            - ⚡ Đo công suất Real-time (CPU, GPU, System Watts)
+            - 🌡️ Giám sát nhiệt độ °C & xung nhịp GHz/MHz
+            - 📁 Trang Quản lý Thư mục `/manager-pc` (Duyệt cây thư mục & Tải file/ZIP)
+            - 🔊 Điều khiển Âm lượng & Media PC Remote
+            - 💻 Interactive Web Terminal Console (PowerShell prompt)
+            - ⏱️ Hẹn giờ tự động Tắt máy / Sleep
+            - 📊 Thống kê chi tiết & Xuất báo cáo CSV
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
