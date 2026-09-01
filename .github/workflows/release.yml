@@ -2,6 +2,8 @@ name: Auto Build & Release Power Monitor PC
 
 on:
   push:
+    branches:
+      - main
     tags:
       - 'v*'
   workflow_dispatch:
@@ -44,10 +46,11 @@ jobs:
       - name: Create GitHub Release & Upload Asset
         uses: softprops/action-gh-release@v1
         with:
+          tag_name: ${{ github.ref_name == 'main' && 'latest' || github.ref_name }}
           files: PowerMonitorPC.zip
-          name: "Power Monitor PC ${{ github.ref_name }}"
+          name: "Power Monitor PC (${{ github.ref_name == 'main' && 'Latest Build' || github.ref_name }})"
           body: |
-            ## 🚀 Release ${{ github.ref_name }} Auto-Built by GitHub Actions
+            ## 🚀 Release (${{ github.ref_name }}) Auto-Built by GitHub Actions
             
             ### ✨ Features Included:
             - ⚡ Đo công suất Real-time (CPU, GPU, System Watts)
