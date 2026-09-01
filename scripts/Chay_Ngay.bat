@@ -4,6 +4,10 @@ cd /d "%~dp0.."
 echo ===================================================
 echo   POWER MONITOR PC - PHIEN BAN PORTABLE DONG GOI
 echo ===================================================
+echo [*] Dang don dep cac phien lam viec cu...
+taskkill /f /im PowerMonitorPC.exe >nul 2>&1
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":38472" ^| findstr "LISTENING"') do taskkill /f /pid %%a >nul 2>&1
+
 echo [*] Dang khoi chay LibreHardwareMonitor chay ngam Khung khay he thong...
 if exist "LibreHardwareMonitor.NET.10\LibreHardwareMonitor.exe" (
     start "" "LibreHardwareMonitor.NET.10\LibreHardwareMonitor.exe"

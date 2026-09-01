@@ -6,6 +6,18 @@ $lhmCfgSource = Join-Path $rootDir "LibreHardwareMonitor.NET.10\LibreHardwareMon
 $lhmAppDataDir = Join-Path $env:APPDATA "LibreHardwareMonitor"
 $lhmAppDataCfg = Join-Path $lhmAppDataDir "LibreHardwareMonitor.config"
 
+# Tự động dọn dẹp các tiến trình server cũ đang chạy trước khi cài đặt
+try {
+    Get-Process "PowerMonitorPC" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+    $connections = Get-NetTCPConnection -LocalPort 38472 -State Listen -ErrorAction SilentlyContinue
+    foreach ($conn in $connections) {
+        if ($conn.OwningProcess) {
+            Stop-Process -Id $conn.OwningProcess -Force -ErrorAction SilentlyContinue
+        }
+    }
+    Write-Host "[+] Da don dep cac tien trinh server cu" -ForegroundColor Green
+} catch {}
+
 # Tự động nạp cấu hình Remote Web Server (cổng 8085) vào AppData
 try {
     if (-not (Test-Path $lhmAppDataDir)) {

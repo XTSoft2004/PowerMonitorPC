@@ -5,12 +5,18 @@ echo =======================================================
 echo   BAT DAU DONG GOI PORTABLE RELEASE (ZIP)
 echo =======================================================
 
+echo [*] Dang don dep va dung cac tien trinh Dang chay...
+taskkill /F /IM PowerMonitorPC.exe /T >nul 2>&1
+powershell -Command "Stop-Process -Name 'PowerMonitorPC' -ErrorAction SilentlyContinue -Force" >nul 2>&1
+timeout /t 2 /nobreak >nul
+
 echo [*] Xoa cac thu muc build cu...
 if exist build rmdir /s /q build
 if exist dist rmdir /s /q dist
 if exist PowerMonitorPC.spec del /f /q PowerMonitorPC.spec
 
 echo [*] Dang bien dich Standalone Portable EXE qua PyInstaller...
+taskkill /F /IM PowerMonitorPC.exe /T >nul 2>&1
 pyinstaller --noconfirm --onedir --windowed --name PowerMonitorPC --add-data "templates;templates" --add-data "static;static" --add-data "config.json;." server.py
 
 if not exist dist\PowerMonitorPC\PowerMonitorPC.exe (

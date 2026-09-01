@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bảng Phân Tích Điện Năng - Power Monitor PC</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <div class="dashboard-container">
+    <!-- Header -->
+    <header>
+      <div class="brand">
+        <div class="brand-icon">📊</div>
+        <div class="brand-title">
+          <h1>Bảng Phân Tích & Báo Cáo Điện Năng</h1>
+          <p>Lọc chi tiết dữ liệu tiêu thụ theo Giờ, Ngày và Tháng</p>
+        </div>
+      </div>
+      <div class="header-right">
+        <a href="/" class="btn" style="text-decoration: none;">🏠 Trang Chủ</a>
+        <a href="/manager-pc" class="btn" style="text-decoration: none;">📁 Quản Lý File PC</a>
+        <button class="btn" onclick="exportAnalyticsCSV()">📥 Xuất CSV</button>
+      </div>
+    </header>
+
+    <!-- Filter Card -->
+    <div class="analytics-filter-card">
+      <div class="filter-group">
+        <span class="filter-label">Chế Độ Thống Kê:</span>
+        <div class="tabs-container">
+          <button class="tab-btn active" id="tabHourly" onclick="switchFilter('hourly')">🕒 Theo Giờ</button>
+          <button class="tab-btn" id="tabDaily" onclick="switchFilter('daily')">📅 Theo Ngày</button>
+          <button class="tab-btn" id="tabMonthly" onclick="switchFilter('monthly')">📆 Theo Tháng</button>
+        </div>
+      </div>
+
+      <div class="filter-group">
+        <div id="dateFilterGroup" style="display: flex; align-items: center; gap: 8px;">
+          <span class="filter-label">Chọn Ngày:</span>
+          <input type="date" id="inputFilterDate" class="date-picker" onchange="loadAnalyticsData()">
+        </div>
+
+        <div id="limitFilterGroup" style="display: none; align-items: center; gap: 8px;">
+          <span class="filter-label">Số Lượng Hiển Thị:</span>
+          <select id="selectLimit" class="date-picker" onchange="loadAnalyticsData()" style="background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: var(--text-main); padding: 6px 10px; border-radius: 8px;">
+            <option value="30">30 dòng gần nhất</option>
+            <option value="60">60 dòng</option>
+            <option value="180">180 dòng (6 tháng)</option>
+            <option value="365">365 dòng (1 năm)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary Metrics for Filtered Data -->
+    <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
+      <div class="stat-card cyan">
+        <div class="stat-header">
+          <span class="stat-title">Tổng Số Điện Lọc Được</span>
+          <span class="stat-icon">⚡</span>
+        </div>
+        <div class="stat-value"><span id="sumKwh">0.000</span> <span style="font-size:1rem; color:var(--text-muted);">kWh</span></div>
+      </div>
+
+      <div class="stat-card green">
+        <div class="stat-header">
+          <span class="stat-title">Tổng Tiền Điện Tạm Tính</span>
+          <span class="stat-icon">💰</span>
+        </div>
+        <div class="stat-value"><span id="sumCost">0</span> <span style="font-size:1rem; color:var(--text-muted);">VND</span></div>
+      </div>
+
+      <div class="stat-card purple">
+        <div class="stat-header">
+          <span class="stat-title">CS Trung Bình Toàn Bộ</span>
+          <span class="stat-icon">📊</span>
+        </div>
+        <div class="stat-value"><span id="avgWatts">0.0</span> <span style="font-size:1rem; color:var(--text-muted);">W</span></div>
+      </div>
+
+      <div class="stat-card amber">
+        <div class="stat-header">
+          <span class="stat-title">CS Đỉnh Cao Nhất</span>
+          <span class="stat-icon">🔥</span>
+        </div>
+        <div class="stat-value"><span id="peakWatts">0.0</span> <span style="font-size:1rem; color:var(--text-muted);">W</span></div>
+      </div>
+    </div>
+
+    <!-- Data Table Card -->
+    <div class="table-card">
+      <table class="data-table" id="analyticsTable">
+        <thead>
+          <tr id="tableHeaderRow">
+            <!-- Headers filled dynamically -->
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <!-- Rows filled dynamically -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Real-time Task Manager Card -->
+    <div class="chart-card" style="margin-top: 1.5rem;">
+      <div class="chart-header" style="flex-wrap: wrap; gap: 10px;">
+        <div class="chart-title">🖥️ Quản Lý Tiến Trình Đang Chạy (Real-time Task Manager)</div>
+        <div class="chart-controls">
+          <input type="text" id="procSearchInput" class="date-picker" placeholder="🔍 Tìm tên app (chrome, game...)" oninput="renderProcessTable()" style="width: 210px;">
+          <div class="tabs-container">
+            <button class="tab-btn active" id="procSortCpu" onclick="setProcSort('cpu')">🔥 Theo CPU %</button>
+            <button class="tab-btn" id="procSortMem" onclick="setProcSort('memory')">💾 Theo RAM (MB)</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="procToast" class="banner-warning" style="display: none; margin-bottom: 1rem; padding: 0.75rem 1rem;"></div>
+
+      <!-- Batch Action Control Bar -->
+      <div id="batchProcBar" style="display: none; align-items: center; justify-content: space-between; background: rgba(239, 68, 68, 0.14); border: 1px solid rgba(239, 68, 68, 0.4); padding: 0.75rem 1rem; border-radius: 12px; margin-bottom: 1rem; flex-wrap: wrap; gap: 10px;">
+        <span style="font-weight: 700; color: #f87171;" id="selectedProcCountText">Đã chọn 0 tiến trình</span>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn" style="background: var(--accent-danger); color: #fff; border: none; font-weight: 700;" onclick="killSelectedApps()">🛑 Diệt Các App Đã Chọn</button>
+          <button class="btn" style="background: rgba(255,255,255,0.1);" onclick="clearSelectedProcs()">❌ Bỏ chọn tất cả</button>
+        </div>
+      </div>
+
+      <div class="table-card" style="padding: 0; background: transparent; border: none; max-height: 420px; overflow-y: auto;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width: 40px; text-align: center;"><input type="checkbox" id="selectAllProcs" onchange="toggleSelectAllProcs(this)" title="Chọn tất cả tiến trình đang hiển thị" style="cursor: pointer; transform: scale(1.15);"></th>
+              <th>PID</th>
+              <th>Ứng Dụng (Process Name)</th>
+              <th>CPU (%)</th>
+              <th>RAM (MB)</th>
+              <th>Đường Dẫn Executable</th>
+              <th style="text-align: right;">Hành Động</th>
+            </tr>
+          </thead>
+          <tbody id="procTableBody">
+            <!-- Process rows loaded live -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let activeFilter = 'hourly';
+    let currentData = [];
+    let selectedDate = new Date().toISOString().split('T')[0];
+    let procSortBy = 'cpu';
+    let rawProcesses = [];
+
+    function formatNumber(num, decimals = 2) {
+      return (num || 0).toLocaleString('vi-VN', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+    }
+
+    function formatVND(num) {
+      return Math.round(num || 0).toLocaleString('vi-VN');
+    }
+
+    function formatTime(seconds) {
+      seconds = Math.floor(seconds || 0);
+      const hrs = Math.floor(seconds / 3600);
+      const mins = Math.floor((seconds % 3600) / 60);
+      const secs = seconds % 60;
+      if (hrs > 0) return `${hrs}h ${mins}m ${secs}s`;
+      return `${mins}m ${secs}s`;
+    }
+
+    function switchFilter(mode) {
+      activeFilter = mode;
+      document.getElementById('tabHourly').classList.toggle('active', mode === 'hourly');
+      document.getElementById('tabDaily').classList.toggle('active', mode === 'daily');
+      document.getElementById('tabMonthly').classList.toggle('active', mode === 'monthly');
+
+      const dateGroup = document.getElementById('dateFilterGroup');
+      const limitGroup = document.getElementById('limitFilterGroup');
+
+      if (mode === 'hourly') {
+        dateGroup.style.display = 'flex';
+        limitGroup.style.display = 'none';
+      } else {
+        dateGroup.style.display = 'none';
+        limitGroup.style.display = 'flex';
+      }
+
+      loadAnalyticsData();
+    }
+
+    async function loadAnalyticsData() {
+      let url = '';
+      if (activeFilter === 'hourly') {
+        const dateInput = document.getElementById('inputFilterDate').value || selectedDate;
+        url = `/api/stats/hourly?date=${dateInput}`;
+      } else if (activeFilter === 'daily') {
+        const limit = document.getElementById('selectLimit').value || 30;
+        url = `/api/stats/daily?days=${limit}`;
+      } else if (activeFilter === 'monthly') {
+        const limit = document.getElementById('selectLimit').value || 30;
+        url = `/api/stats/monthly?months=${limit}`;
+      }
+
+      try {
+        const res = await fetch(url);
+        currentData = await res.json();
+        renderSummaryAndTable();
+      } catch (err) {
+        console.error('Fetch analytics error', err);
+      }
+    }
+
+    function renderSummaryAndTable() {
+      const headerRow = document.getElementById('tableHeaderRow');
+      const tableBody = document.getElementById('tableBody');
+
+      // Calculate Summary Metrics
+      let totalKwh = 0.0;
+      let totalCost = 0.0;
+      let maxPeak = 0.0;
+      let sumPower = 0.0;
+      let totalSamples = 0;
+
+      currentData.forEach(item => {
+        totalKwh += (item.total_kwh || 0);
+        totalCost += (item.estimated_cost_vnd || 0);
+        if ((item.peak_power_w || 0) > maxPeak) maxPeak = item.peak_power_w;
+        sumPower += (item.sum_power_w || 0);
+        totalSamples += (item.sample_count || 0);
+      });
+
+      const overallAvg = totalSamples > 0 ? (sumPower / totalSamples) : 0.0;
+
+      document.getElementById('sumKwh').innerText = formatNumber(totalKwh, 3);
+      document.getElementById('sumCost').innerText = formatVND(totalCost);
+      document.getElementById('avgWatts').innerText = formatNumber(overallAvg, 1);
+      document.getElementById('peakWatts').innerText = formatNumber(maxPeak, 1);
+
+      // Render Headers
+      if (activeFilter === 'hourly') {
+        headerRow.innerHTML = `
+          <th>#</th>
+          <th>Khung Giờ</th>
+          <th>Ngày</th>
+          <th>Số Điện (kWh)</th>
+          <th>Tiền Điện Tạm Tính (VND)</th>
+          <th>Công Suất TB (W)</th>
+          <th>Công Suất Đỉnh (W)</th>
+          <th>Thời Gian Chạy</th>
+        `;
+      } else if (activeFilter === 'daily') {
+        headerRow.innerHTML = `
+          <th>#</th>
+          <th>Ngày</th>
+          <th>Số Điện (kWh)</th>
+          <th>Tiền Điện Tạm Tính (VND)</th>
+          <th>Công Suất TB (W)</th>
+          <th>Công Suất Đỉnh (W)</th>
+          <th>Thời Gian Chạy</th>
+        `;
+      } else {
+        headerRow.innerHTML = `
+          <th>#</th>
+          <th>Tháng</th>
+          <th>Tổng Số Điện (kWh)</th>
+          <th>Tải EVN Tạm Tính (VND)</th>
+          <th>Công Suất TB (W)</th>
+          <th>Công Suất Đỉnh (W)</th>
+          <th>Thời Gian Chạy</th>
+          <th>Số Ngày Ghi Nhận</th>
+        `;
+      }
+
+      // Render Rows
+      tableBody.innerHTML = '';
+      if (!currentData || currentData.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="8" style="text-align:center; color: var(--text-muted); padding: 2rem;">Chưa có dữ liệu thống kê cho khoảng thời gian này.</td></tr>`;
+        return;
+      }
+
+      currentData.forEach((item, index) => {
+        const tr = document.createElement('tr');
+
+        if (activeFilter === 'hourly') {
+          tr.innerHTML = `
+            <td style="color: var(--text-muted);">${index + 1}</td>
+            <td><strong style="color: var(--accent-cyan);">${item.hour}</strong></td>
+            <td>${item.date}</td>
+            <td><strong style="color: var(--accent-green);">${formatNumber(item.total_kwh, 3)} kWh</strong></td>
+            <td>${formatVND(item.estimated_cost_vnd)} đ</td>
+            <td>${formatNumber(item.avg_power_w, 1)} W</td>
+            <td><span class="metric-badge">${formatNumber(item.peak_power_w, 1)} W</span></td>
+            <td>${formatTime(item.total_active_seconds)}</td>
+          `;
+        } else if (activeFilter === 'daily') {
+          tr.innerHTML = `
+            <td style="color: var(--text-muted);">${index + 1}</td>
+            <td><strong style="color: #fff;">${item.date}</strong></td>
+            <td><strong style="color: var(--accent-green);">${formatNumber(item.total_kwh, 3)} kWh</strong></td>
+            <td><strong style="color: var(--accent-amber);">${formatVND(item.estimated_cost_vnd)} đ</strong></td>
+            <td>${formatNumber(item.avg_power_w, 1)} W</td>
+            <td><span class="metric-badge">${formatNumber(item.peak_power_w, 1)} W</span></td>
+            <td>${formatTime(item.total_active_seconds)}</td>
+          `;
+        } else {
+          tr.innerHTML = `
+            <td style="color: var(--text-muted);">${index + 1}</td>
+            <td><strong style="color: var(--accent-purple);">${item.month}</strong></td>
+            <td><strong style="color: var(--accent-green);">${formatNumber(item.total_kwh, 3)} kWh</strong></td>
+            <td><strong style="color: var(--accent-amber);">${formatVND(item.estimated_cost_vnd)} đ</strong></td>
+            <td>${formatNumber(item.avg_power_w, 1)} W</td>
+            <td><span class="metric-badge">${formatNumber(item.peak_power_w, 1)} W</span></td>
+            <td>${formatTime(item.total_active_seconds)}</td>
+            <td>${item.days_count || 0} ngày</td>
+          `;
+        }
+
+        tableBody.appendChild(tr);
+      });
+    }
+
+    function exportAnalyticsCSV() {
+      let url = `/api/export?type=${activeFilter}`;
+      if (activeFilter === 'hourly') {
+        const dateInput = document.getElementById('inputFilterDate').value || selectedDate;
+        url += `&date=${dateInput}`;
+      }
+      window.location.href = url;
+    }
+
+    let selectedPids = new Set();
+
+    async function updateProcesses() {
+      try {
+        const res = await fetch(`/api/processes?limit=60&sort=${procSortBy}`);
+        rawProcesses = await res.json();
+        renderProcessTable();
+      } catch (err) {
+        console.error('Fetch processes error', err);
+      }
+    }
+
+    function setProcSort(sort) {
+      procSortBy = sort;
+      document.getElementById('procSortCpu').classList.toggle('active', sort === 'cpu');
+      document.getElementById('procSortMem').classList.toggle('active', sort === 'memory');
+      updateProcesses();
+    }
+
+    function toggleProcSelection(pid, cb) {
+      if (cb.checked) {
+        selectedPids.add(pid);
+      } else {
+        selectedPids.delete(pid);
+      }
+      updateBatchProcBar();
+    }
+
+    function toggleSelectAllProcs(selectAllCb) {
+      const visibleCbs = document.querySelectorAll('.proc-cb');
+      visibleCbs.forEach(cb => {
+        const pid = parseInt(cb.value);
+        cb.checked = selectAllCb.checked;
+        if (selectAllCb.checked) {
+          selectedPids.add(pid);
+        } else {
+          selectedPids.delete(pid);
+        }
+      });
+      updateBatchProcBar();
+    }
+
+    function clearSelectedProcs() {
+      selectedPids.clear();
+      const selectAll = document.getElementById('selectAllProcs');
+      if (selectAll) selectAll.checked = false;
+      document.querySelectorAll('.proc-cb').forEach(cb => cb.checked = false);
+      updateBatchProcBar();
+    }
+
+    function updateBatchProcBar() {
+      const bar = document.getElementById('batchProcBar');
+      const countText = document.getElementById('selectedProcCountText');
+      if (!bar) return;
+
+      if (selectedPids.size > 0) {
+        bar.style.display = 'flex';
+        countText.innerText = `Đã chọn ${selectedPids.size} tiến trình`;
+      } else {
+        bar.style.display = 'none';
+      }
+    }
+
+    function renderProcessTable() {
+      const tbody = document.getElementById('procTableBody');
+      const search = (document.getElementById('procSearchInput').value || '').toLowerCase().trim();
+      
+      let filtered = rawProcesses;
+      if (search) {
+        filtered = rawProcesses.filter(p => p.name.toLowerCase().includes(search) || p.pid.toString().includes(search));
+      }
+
+      tbody.innerHTML = '';
+      if (!filtered || filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color: var(--text-muted); padding: 1.5rem;">Không tìm thấy tiến trình phù hợp.</td></tr>`;
+        return;
+      }
+
+      filtered.forEach(p => {
+        const tr = document.createElement('tr');
+        const isChecked = selectedPids.has(p.pid);
+        tr.innerHTML = `
+          <td style="text-align: center;"><input type="checkbox" class="proc-cb" value="${p.pid}" ${isChecked ? 'checked' : ''} onchange="toggleProcSelection(${p.pid}, this)" style="cursor: pointer; transform: scale(1.15);"></td>
+          <td style="color: var(--text-muted); font-family: monospace;">${p.pid}</td>
+          <td><strong style="color: #fff;">${p.name}</strong></td>
+          <td><span style="color: ${p.cpu_percent > 10 ? 'var(--accent-danger)' : 'var(--accent-cyan)'}; font-weight:700;">${p.cpu_percent}%</span></td>
+          <td><strong style="color: var(--accent-purple);">${p.memory_mb} MB</strong></td>
+          <td style="color: var(--text-muted); font-size: 0.8rem; max-width: 260px; overflow: hidden; text-overflow: ellipsis;" title="${p.exe}">${p.exe || 'System/Background'}</td>
+          <td style="text-align: right;">
+            <button class="btn" style="background: rgba(239,68,68,0.15); color: var(--accent-danger); border-color: rgba(239,68,68,0.4); padding: 4px 10px; font-size: 0.8rem;" onclick="killApp(${p.pid}, '${p.name.replace(/'/g, "\\'")}')">🛑 Diệt App</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+      updateBatchProcBar();
+    }
+
+    async function killSelectedApps() {
+      if (selectedPids.size === 0) return;
+      const pidsArray = Array.from(selectedPids);
+
+      if (!confirm(`Bạn có chắc chắn muốn buộc dừng (Kill) ${pidsArray.length} tiến trình đã chọn?`)) {
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/processes/kill', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pids: pidsArray })
+        });
+        const data = await res.json();
+
+        const toast = document.getElementById('procToast');
+        toast.style.display = 'flex';
+        if (data.status === 'success') {
+          toast.style.background = 'rgba(16, 185, 129, 0.1)';
+          toast.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+          toast.style.color = '#34d399';
+          toast.innerText = `✅ ${data.message}`;
+        } else {
+          toast.style.background = 'rgba(239, 68, 68, 0.1)';
+          toast.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+          toast.style.color = '#f87171';
+          toast.innerText = `⚠️ ${data.message}`;
+        }
+
+        setTimeout(() => { toast.style.display = 'none'; }, 4000);
+        clearSelectedProcs();
+        await updateProcesses();
+      } catch (err) {
+        alert('Lỗi khi gửi yêu cầu diệt nhiều tiến trình: ' + err);
+      }
+    }
+
+    async function killApp(pid, name) {
+      if (!confirm(`Bạn có chắc chắn muốn buộc dừng (Kill) ứng dụng ${name} (PID: ${pid})?`)) {
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/processes/kill', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pid: pid })
+        });
+        const data = await res.json();
+        
+        const toast = document.getElementById('procToast');
+        toast.style.display = 'flex';
+        if (data.status === 'success') {
+          toast.style.background = 'rgba(16, 185, 129, 0.1)';
+          toast.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+          toast.style.color = '#34d399';
+          toast.innerText = `✅ ${data.message}`;
+        } else {
+          toast.style.background = 'rgba(239, 68, 68, 0.1)';
+          toast.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+          toast.style.color = '#f87171';
+          toast.innerText = `⚠️ ${data.message}`;
+        }
+
+        setTimeout(() => { toast.style.display = 'none'; }, 4000);
+        await updateProcesses();
+      } catch (err) {
+        alert('Lỗi khi gửi yêu cầu diệt tiến trình: ' + err);
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('inputFilterDate').value = selectedDate;
+      loadAnalyticsData();
+      updateProcesses();
+
+      setInterval(updateProcesses, 2500);
+    });
+  </script>
+</body>
+</html>

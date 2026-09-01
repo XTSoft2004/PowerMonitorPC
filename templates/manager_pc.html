@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quản Lý Thư Mục PC - Power Monitor PC</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+    .breadcrumb-bar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--border-color);
+      padding: 10px 16px;
+      border-radius: 12px;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+      font-family: monospace;
+      font-size: 0.9rem;
+    }
+    .crumb-item {
+      color: var(--accent-cyan);
+      cursor: pointer;
+      font-weight: 700;
+      transition: all 0.2s ease;
+    }
+    .crumb-item:hover {
+      text-decoration: underline;
+      color: #fff;
+    }
+    .crumb-separator {
+      color: var(--text-muted);
+    }
+    .drive-card-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 1rem;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+    .drive-card-item:hover {
+      border-color: var(--accent-cyan);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-glow-cyan);
+    }
+    .file-row {
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+    .file-row:hover {
+      background: rgba(255, 255, 255, 0.04) !important;
+    }
+    .file-icon {
+      font-size: 1.25rem;
+      margin-right: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard-container">
+    <!-- Header -->
+    <header class="main-header">
+      <div class="brand">
+        <div class="brand-icon">📁</div>
+        <div>
+          <h1>Quản Lý File & Thư Mục PC</h1>
+          <p class="subtitle">Duyệt cây thư mục hệ thống & Tải file/ZIP từ xa</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <a href="/" class="btn" style="text-decoration: none;">⚡ Dashboard Live</a>
+        <a href="/analytics" class="btn" style="text-decoration: none;">📊 Bảng Phân Tích</a>
+        <a href="/manager-pc" class="btn" style="text-decoration: none; border-color: var(--accent-cyan); color: var(--accent-cyan); font-weight: 700;">📁 Quản Lý Thư Mục PC</a>
+      </div>
+    </header>
+
+    <!-- Drive Partitions Bar -->
+    <div style="margin-bottom: 1.25rem;">
+      <div style="font-size: 0.95rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.75rem;">💾 Ổ ĐĨA HỆ THỐNG AVAILABLE</div>
+      <div id="drivesGrid" class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem;">
+        <!-- Drive cards loaded dynamically -->
+      </div>
+    </div>
+
+    <!-- File Explorer Section Card -->
+    <div class="chart-card">
+      <!-- Breadcrumb Bar -->
+      <div class="breadcrumb-bar" id="breadcrumbBar">
+        <span class="crumb-item" onclick="loadDriveList()">💻 Computer</span>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="chart-header" style="flex-wrap: wrap; gap: 10px; margin-bottom: 1rem;">
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button class="btn" id="btnParentDir" onclick="goParentDir()">⬅️ Thư Mục Cha</button>
+          <button class="btn" onclick="refreshCurrentDir()">🔄 Làm Mới</button>
+        </div>
+        <div class="chart-controls">
+          <input type="text" id="fileSearchInput" class="date-picker" placeholder="🔍 Lọc file/thư mục..." oninput="renderFilesTable()" style="width: 240px;">
+        </div>
+      </div>
+
+      <div id="fileToast" class="banner-warning" style="display: none; margin-bottom: 1rem; padding: 0.75rem 1rem;"></div>
+
+      <!-- File List Table -->
+      <div class="table-card" style="padding: 0; background: transparent; border: none; min-height: 400px; max-height: 580px; overflow-y: auto;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width: 40px;">Thẻ</th>
+              <th>Tên File / Thư Mục</th>
+              <th>Kích Thước</th>
+              <th>Ngày Sửa Đổi</th>
+              <th style="text-align: right;">Hành Động</th>
+            </tr>
+          </thead>
+          <tbody id="filesTableBody">
+            <!-- Files & Subfolders loaded live -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentPath = '';
+    let parentPath = null;
+    let rawItems = [];
+
+    async function fetchDrives() {
+      try {
+        const res = await fetch('/api/files/drives');
+        const drives = await res.json();
+        const container = document.getElementById('drivesGrid');
+        container.innerHTML = '';
+
+        drives.forEach(d => {
+          const card = document.createElement('div');
+          card.className = 'drive-card-item';
+          card.onclick = () => loadDirectory(d.mountpoint);
+
+          card.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span style="font-weight: 700; color: #fff; font-size: 1rem;">💾 Ổ ${d.mountpoint}</span>
+              <span style="font-size: 0.8rem; color: var(--accent-cyan); font-weight: 700;">${d.fstype || 'NTFS'}</span>
+            </div>
+            <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 8px;">Còn trống ${d.free_gb} GB / ${d.total_gb} GB</div>
+            <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
+              <div style="width: ${d.percent}%; height: 100%; background: ${d.percent > 90 ? 'var(--accent-danger)' : 'var(--accent-cyan)'};"></div>
+            </div>
+          `;
+          container.appendChild(card);
+        });
+
+        if (drives.length > 0 && !currentPath) {
+          loadDirectory(drives[0].mountpoint);
+        }
+      } catch (err) {
+        console.error('Fetch drives error', err);
+      }
+    }
+
+    async function loadDirectory(path) {
+      try {
+        const toast = document.getElementById('fileToast');
+        toast.style.display = 'none';
+
+        const res = await fetch(`/api/files/list?path=${encodeURIComponent(path || '')}`);
+        const data = await res.json();
+
+        if (data.status === 'error') {
+          toast.style.display = 'block';
+          toast.innerText = '⚠️ ' + data.message;
+          return;
+        }
+
+        currentPath = data.current_path;
+        parentPath = data.parent_path;
+        rawItems = data.items || [];
+
+        document.getElementById('btnParentDir').disabled = !parentPath;
+        renderBreadcrumbs(currentPath);
+        renderFilesTable();
+
+      } catch (err) {
+        console.error('Load directory error', err);
+      }
+    }
+
+    function renderBreadcrumbs(path) {
+      const bar = document.getElementById('breadcrumbBar');
+      bar.innerHTML = '<span class="crumb-item" onclick="loadDirectory(\'\')">💻 Computer</span>';
+
+      if (!path) return;
+
+      const parts = path.split(/[\/\\]+/).filter(Boolean);
+      let accumulated = '';
+
+      parts.forEach((part, index) => {
+        bar.innerHTML += '<span class="crumb-separator">/</span>';
+        if (index === 0 && path.includes(':')) {
+          accumulated = part + '\\';
+        } else {
+          accumulated += (accumulated.endsWith('\\') ? '' : '\\') + part;
+        }
+
+        const targetPath = accumulated;
+        bar.innerHTML += `<span class="crumb-item" onclick="loadDirectory('${escapeJsStr(targetPath)}')">📁 ${escapeHtml(part)}</span>`;
+      });
+    }
+
+    function renderFilesTable() {
+      const search = (document.getElementById('fileSearchInput').value || '').toLowerCase().trim();
+      const tbody = document.getElementById('filesTableBody');
+      tbody.innerHTML = '';
+
+      const filtered = rawItems.filter(item => item.name.toLowerCase().includes(search));
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 2rem;">Chưa có file/thư mục nào trong đường dẫn này.</td></tr>`;
+        return;
+      }
+
+      filtered.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.className = 'file-row';
+
+        const icon = item.is_dir ? '📁' : getFileIcon(item.name);
+        const nameColor = item.is_dir ? 'var(--accent-cyan)' : '#ffffff';
+
+        tr.innerHTML = `
+          <td style="text-align: center; font-size: 1.2rem;">${icon}</td>
+          <td>
+            <span style="font-weight: 600; color: ${nameColor}; font-size: 0.92rem;" onclick="${item.is_dir ? `loadDirectory('${escapeJsStr(item.path)}')` : ''}">
+              ${escapeHtml(item.name)}
+            </span>
+          </td>
+          <td style="color: var(--text-muted); font-size: 0.85rem;">${item.size_str}</td>
+          <td style="color: var(--text-muted); font-size: 0.85rem;">${item.modified}</td>
+          <td style="text-align: right;">
+            ${item.is_dir ? `
+              <button class="btn" style="padding: 4px 10px; font-size: 0.78rem; background: rgba(0,242,254,0.12); color: var(--accent-cyan); border-color: rgba(0,242,254,0.3);" onclick="event.stopPropagation(); loadDirectory('${escapeJsStr(item.path)}')">📂 Mở</button>
+              <button class="btn" style="padding: 4px 10px; font-size: 0.78rem; background: rgba(16,185,129,0.12); color: var(--accent-green); border-color: rgba(16,185,129,0.3);" onclick="event.stopPropagation(); downloadZip('${escapeJsStr(item.path)}')">📦 Tải ZIP</button>
+            ` : `
+              <button class="btn" style="padding: 4px 10px; font-size: 0.78rem; background: rgba(59,130,246,0.15); color: #60a5fa; border-color: rgba(59,130,246,0.3);" onclick="event.stopPropagation(); downloadFile('${escapeJsStr(item.path)}')">📥 Tải File</button>
+              <button class="btn" style="padding: 4px 10px; font-size: 0.78rem; background: rgba(16,185,129,0.12); color: var(--accent-green); border-color: rgba(16,185,129,0.3);" onclick="event.stopPropagation(); downloadZip('${escapeJsStr(item.path)}')">📦 ZIP</button>
+            `}
+          </td>
+        `;
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    function goParentDir() {
+      if (parentPath) {
+        loadDirectory(parentPath);
+      }
+    }
+
+    function refreshCurrentDir() {
+      loadDirectory(currentPath);
+    }
+
+    function downloadFile(path) {
+      window.location.href = `/api/files/download?path=${encodeURIComponent(path)}`;
+    }
+
+    function downloadZip(path) {
+      window.location.href = `/api/files/zip?path=${encodeURIComponent(path)}`;
+    }
+
+    function getFileIcon(filename) {
+      const ext = filename.split('.').pop().toLowerCase();
+      if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(ext)) return '🖼️';
+      if (['mp4', 'mkv', 'avi', 'mov'].includes(ext)) return '🎬';
+      if (['mp3', 'wav', 'flac'].includes(ext)) return '🎵';
+      if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) return '📦';
+      if (['pdf', 'doc', 'docx', 'txt'].includes(ext)) return '📄';
+      if (['exe', 'bat', 'cmd', 'ps1', 'sh'].includes(ext)) return '⚙️';
+      if (['py', 'js', 'html', 'css', 'json'].includes(ext)) return '💻';
+      return '📄';
+    }
+
+    function escapeHtml(str) {
+      return (str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    function escapeJsStr(str) {
+      return (str || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      fetchDrives();
+    });
+  </script>
+</body>
+</html>

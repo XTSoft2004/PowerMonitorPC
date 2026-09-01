@@ -25,6 +25,8 @@
           <span class="dot"></span>
           <span id="statusText">Đang kiểm tra...</span>
         </div>
+        <a href="/analytics" class="btn" style="text-decoration: none;">📊 Bảng Phân Tích</a>
+        <a href="/manager-pc" class="btn" style="text-decoration: none;">📁 Quản Lý File PC</a>
         <button class="btn" onclick="openConfigModal()">⚙️ Cấu hình</button>
         <button class="btn" onclick="exportCSV()">📥 Xuất CSV</button>
       </div>
@@ -89,25 +91,272 @@
       </div>
     </div>
 
-    <!-- Charts Grid -->
-    <div class="charts-grid">
+    <!-- Thermal & Hardware Monitor Grid -->
+    <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));">
+      <!-- CPU Thermal & Clock Card -->
+      <div class="stat-card cyan">
+        <div class="stat-header">
+          <span class="stat-title">Nhiệt Độ & Xung Nhịp CPU</span>
+          <span class="stat-icon" id="cpuTempIcon">🌡️</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 0.5rem;">
+          <div>
+            <div class="stat-value" id="valCpuTemp">0 °C</div>
+            <div style="font-size: 0.85rem; color: var(--text-muted);" id="valCpuClock">Xung nhịp: 0.0 GHz</div>
+          </div>
+          <div id="cpuTempBadge" class="sub-tag" style="font-size: 0.85rem; font-weight: 700; padding: 4px 10px; border-radius: 20px;">Mát</div>
+        </div>
+        <div class="stat-sub">
+          <span class="sub-tag">Sử dụng: <strong id="valCpuUsage">0%</strong></span>
+          <span class="sub-tag">RAM: <strong id="valRamUsage">0%</strong></span>
+        </div>
+      </div>
+
+      <!-- GPU Thermal & Clock Card -->
+      <div class="stat-card amber">
+        <div class="stat-header">
+          <span class="stat-title">Nhiệt Độ & Xung Nhịp GPU</span>
+          <span class="stat-icon" id="gpuTempIcon">🔥</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 0.5rem;">
+          <div>
+            <div class="stat-value" id="valGpuTemp">0 °C</div>
+            <div style="font-size: 0.85rem; color: var(--text-muted);" id="valGpuClock">Xung: 0 MHz</div>
+          </div>
+          <div id="gpuTempBadge" class="sub-tag" style="font-size: 0.85rem; font-weight: 700; padding: 4px 10px; border-radius: 20px;">Mát</div>
+        </div>
+        <div class="stat-sub">
+          <span class="sub-tag">Quạt GPU: <strong id="valGpuFan">0 RPM</strong></span>
+          <span class="sub-tag">Công suất: <strong id="valGpuPower">0 W</strong></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Consumption Comparison Cards -->
+    <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));">
+      <!-- Daily Comparison Card -->
+      <div class="stat-card cyan">
+        <div class="stat-header">
+          <span class="stat-title">So Sánh Hôm Nay vs Hôm Qua</span>
+          <span class="stat-icon" id="dayTrendIcon">📊</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 0.5rem;">
+          <div>
+            <div class="stat-value" id="valTodayVsYestKwh">0.000 <span style="font-size: 1rem; color: var(--text-muted);">kWh</span></div>
+            <div style="font-size: 0.85rem; color: var(--text-muted);" id="valTodayVsYestCost">Tăng/Giảm: 0 VND</div>
+          </div>
+          <div id="dayTrendBadge" class="sub-tag" style="font-size: 0.85rem; font-weight: 700; padding: 4px 10px; border-radius: 20px;">0%</div>
+        </div>
+        <div class="stat-sub">
+          <span class="sub-tag">Hôm nay: <strong id="valTodayKwhSub">0 kWh</strong></span>
+          <span class="sub-tag">Hôm qua: <strong id="valYestKwhSub">0 kWh</strong></span>
+        </div>
+      </div>
+
+      <!-- Monthly Comparison Card -->
+      <div class="stat-card purple">
+        <div class="stat-header">
+          <span class="stat-title">So Sánh Tháng Này vs Tháng Trước</span>
+          <span class="stat-icon" id="monthTrendIcon">📆</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 0.5rem;">
+          <div>
+            <div class="stat-value" id="valCurVsLastMonthKwh">0.000 <span style="font-size: 1rem; color: var(--text-muted);">kWh</span></div>
+            <div style="font-size: 0.85rem; color: var(--text-muted);" id="valCurVsLastMonthCost">Tăng/Giảm: 0 VND</div>
+          </div>
+          <div id="monthTrendBadge" class="sub-tag" style="font-size: 0.85rem; font-weight: 700; padding: 4px 10px; border-radius: 20px;">0%</div>
+        </div>
+        <div class="stat-sub">
+          <span class="sub-tag">Tháng này: <strong id="valCurMonthKwhSub">0 kWh</strong></span>
+          <span class="sub-tag">Tháng trước: <strong id="valLastMonthKwhSub">0 kWh</strong></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Disk Storage Manager Card -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="chart-title">💾 Quản Lý Dung Lượng Ổ Cứng SSD/HDD</div>
+        <div id="diskAlertBadge" class="status-badge connected" style="font-size: 0.8rem;">Đang kiểm tra...</div>
+      </div>
+      <div id="diskListContainer" class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
+        <!-- Disk progress bars dynamically loaded -->
+      </div>
+    </div>
+
+    <!-- Charts Grid (2 equal columns) -->
+    <div class="charts-grid-2col" style="margin-bottom: 1.25rem;">
       <!-- Live Wattage Line Chart -->
       <div class="chart-card">
         <div class="chart-header">
-          <div class="chart-title">📈 Biến Thiên Công Suất Tiêu Thụ (Real-time Watts)</div>
+          <div class="chart-title">📈 Công Suất Live (Real-time Watts)</div>
         </div>
         <div class="chart-container">
           <canvas id="liveChart"></canvas>
         </div>
       </div>
 
-      <!-- History Daily kWh Bar Chart -->
+      <!-- History / Stats kWh Bar Chart -->
       <div class="chart-card">
         <div class="chart-header">
-          <div class="chart-title">📅 Thống Kê Số Điện Theo Ngày (kWh)</div>
+          <div class="chart-title" id="statsChartTitle">📊 Thống Kê Số Điện (kWh)</div>
+          <div class="chart-controls">
+            <input type="date" id="hourlyDatePicker" class="date-picker" style="display: none;" onchange="onHourlyDateChange()">
+            <div class="tabs-container">
+              <button class="tab-btn" id="tabHourly" onclick="switchStatsTab('hourly')">🕒 Theo Giờ</button>
+              <button class="tab-btn active" id="tabDaily" onclick="switchStatsTab('daily')">📅 Theo Ngày</button>
+              <button class="tab-btn" id="tabMonthly" onclick="switchStatsTab('monthly')">📆 Theo Tháng</button>
+            </div>
+          </div>
         </div>
         <div class="chart-container">
           <canvas id="historyChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Smart Sleep & Power-Off Countdown Card -->
+    <div class="chart-card" style="margin-bottom: 1.25rem;">
+      <div class="chart-header" style="flex-wrap: wrap; gap: 10px;">
+        <div class="chart-title">⏱️ Hẹn Giờ Tự Động Tắt Máy / Sleep (Bedtime Countdown Timer)</div>
+        <div id="timerToast" class="status-badge connected" style="font-size: 0.8rem; display: none;"></div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 1rem;">
+        <!-- Live Countdown Banner -->
+        <div id="timerActiveBox" style="display: none; align-items: center; justify-content: space-between; background: rgba(0, 242, 254, 0.12); border: 1px solid rgba(0, 242, 254, 0.35); padding: 0.85rem 1.25rem; border-radius: 12px; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">Trạng Thái Hẹn Giờ:</span>
+            <span id="timerStatusText" style="font-weight: 800; color: var(--accent-cyan); font-size: 1.1rem; margin-left: 8px;">⏳ Tắt máy trong: 00:00:00</span>
+          </div>
+          <button class="btn" style="background: rgba(239, 68, 68, 0.2); color: var(--accent-danger); border-color: rgba(239, 68, 68, 0.4); font-weight: 700;" onclick="cancelTimer()">❌ Hủy Hẹn Giờ</button>
+        </div>
+
+        <!-- Quick Preset Timer Buttons -->
+        <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: space-between;">
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+            <span style="font-size: 0.88rem; color: var(--text-muted); font-weight: 600;">Hẹn giờ tắt máy:</span>
+            <button class="btn" style="padding: 6px 14px;" onclick="startTimer(15, 'shutdown')">⏱️ 15 Phút</button>
+            <button class="btn" style="padding: 6px 14px;" onclick="startTimer(30, 'shutdown')">⏱️ 30 Phút</button>
+            <button class="btn" style="padding: 6px 14px;" onclick="startTimer(60, 'shutdown')">⏱️ 1 Giờ</button>
+            <button class="btn" style="padding: 6px 14px;" onclick="startTimer(120, 'shutdown')">⏱️ 2 Giờ</button>
+          </div>
+
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+            <span style="font-size: 0.88rem; color: var(--text-muted); font-weight: 600;">Hẹn giờ Sleep:</span>
+            <button class="btn" style="background: rgba(168, 85, 247, 0.15); color: #c084fc; border-color: rgba(168, 85, 247, 0.3); padding: 6px 14px;" onclick="startTimer(30, 'sleep')">🌙 Sleep 30m</button>
+            <button class="btn" style="background: rgba(168, 85, 247, 0.15); color: #c084fc; border-color: rgba(168, 85, 247, 0.3); padding: 6px 14px;" onclick="startTimer(60, 'sleep')">🌙 Sleep 1h</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Remote Audio & Media Control Card (Full Width Banner Style) -->
+    <div class="chart-card" style="margin-bottom: 1.25rem;">
+      <div class="chart-header" style="flex-wrap: wrap; gap: 10px;">
+        <div class="chart-title">🔊 Điều Khiển Âm Lượng & Media PC Remote</div>
+        <div id="audioToast" class="status-badge connected" style="font-size: 0.8rem; display: none;"></div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 1rem;">
+        <!-- Volume Slider Bar -->
+        <div style="display: flex; align-items: center; gap: 12px; background: rgba(0, 0, 0, 0.25); border: 1px solid var(--border-color); padding: 0.85rem 1rem; border-radius: 14px; flex-wrap: wrap;">
+          <span style="font-size: 1.2rem;">🔊</span>
+          <input type="range" id="volRange" min="0" max="100" value="50" onchange="setVolumeLevel(this.value)" oninput="document.getElementById('volValText').innerText = this.value + '%'" style="flex: 1; min-width: 180px; accent-color: var(--accent-cyan); cursor: pointer;">
+          <span id="volValText" style="font-weight: 800; color: var(--accent-cyan); min-width: 50px; text-align: right; font-size: 1.1rem;">50%</span>
+        </div>
+
+        <!-- Action Control Buttons Grid -->
+        <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: space-between;">
+          <!-- Volume Presets & Mute -->
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button class="btn" style="background: rgba(239, 68, 68, 0.15); color: var(--accent-danger); border-color: rgba(239, 68, 68, 0.4);" onclick="sendAudioCmd('mute')">🔇 Tắt / Bật Tiếng</button>
+            <button class="btn" style="padding: 6px 12px;" onclick="setVolumeLevel(25)">🔈 25%</button>
+            <button class="btn" style="padding: 6px 12px;" onclick="setVolumeLevel(50)">🔉 50%</button>
+            <button class="btn" style="padding: 6px 12px;" onclick="setVolumeLevel(75)">🔊 75%</button>
+            <button class="btn" style="padding: 6px 12px;" onclick="setVolumeLevel(100)">🔊 100%</button>
+          </div>
+
+          <!-- Media Playback Buttons -->
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button class="btn" onclick="sendAudioCmd('prev_track')" title="Bài trước">⏮️ Prev</button>
+            <button class="btn" style="background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue)); color: #050b14; border: none; font-weight: 800;" onclick="sendAudioCmd('play_pause')" title="Phát / Tạm dừng">⏯️ Play / Pause</button>
+            <button class="btn" onclick="sendAudioCmd('next_track')" title="Bài tiếp theo">⏭️ Next</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- System Management Section (2 equal columns with matched height) -->
+    <div class="charts-grid-2col" style="align-items: stretch;">
+      <!-- Real-time Task Manager Card -->
+      <div class="chart-card" style="display: flex; flex-direction: column; justify-content: space-between;">
+        <div>
+          <div class="chart-header" style="flex-wrap: wrap; gap: 10px;">
+            <div class="chart-title">🖥️ Quản Lý Tiến Trình (Task Manager)</div>
+            <div class="chart-controls">
+              <input type="text" id="procSearchInput" class="date-picker" placeholder="🔍 Tìm tên app..." oninput="renderProcessTable()" style="width: 180px;">
+              <div class="tabs-container">
+                <button class="tab-btn active" id="procSortCpu" onclick="setProcSort('cpu')">🔥 CPU %</button>
+                <button class="tab-btn" id="procSortMem" onclick="setProcSort('memory')">💾 RAM MB</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="procToast" class="banner-warning" style="display: none; margin-bottom: 1rem; padding: 0.75rem 1rem;"></div>
+
+          <!-- Batch Action Control Bar -->
+          <div id="batchProcBar" style="display: none; align-items: center; justify-content: space-between; background: rgba(239, 68, 68, 0.14); border: 1px solid rgba(239, 68, 68, 0.4); padding: 0.75rem 1rem; border-radius: 12px; margin-bottom: 1rem; flex-wrap: wrap; gap: 10px;">
+            <span style="font-weight: 700; color: #f87171;" id="selectedProcCountText">Đã chọn 0 tiến trình</span>
+            <div style="display: flex; gap: 8px;">
+              <button class="btn" style="background: var(--accent-danger); color: #fff; border: none; font-weight: 700;" onclick="killSelectedApps()">🛑 Diệt Đã Chọn</button>
+              <button class="btn" style="background: rgba(255,255,255,0.1);" onclick="clearSelectedProcs()">❌ Bỏ chọn</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-card" style="padding: 0; background: transparent; border: none; height: 380px; max-height: 380px; overflow-y: auto; flex: 1;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th style="width: 40px; text-align: center;"><input type="checkbox" id="selectAllProcs" onchange="toggleSelectAllProcs(this)" title="Chọn tất cả tiến trình đang hiển thị" style="cursor: pointer; transform: scale(1.15);"></th>
+                <th>PID</th>
+                <th>Ứng Dụng</th>
+                <th>CPU (%)</th>
+                <th>RAM (MB)</th>
+                <th>Đường Dẫn Executable</th>
+                <th style="text-align: right;">Hành Động</th>
+              </tr>
+            </thead>
+            <tbody id="procTableBody">
+              <!-- Process rows loaded live -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Web Terminal Console Card -->
+      <div class="chart-card" style="display: flex; flex-direction: column; justify-content: space-between;">
+        <div>
+          <div class="chart-header" style="flex-wrap: wrap; gap: 10px;">
+            <div class="chart-title">💻 Web Terminal Console (Trực Tiếp Lệnh System)</div>
+            <div class="chart-controls">
+              <button class="btn" style="padding: 4px 10px; font-size: 0.8rem;" onclick="clearTerminalOutput()">🧹 Xóa Màn Hình</button>
+            </div>
+          </div>
+
+          <!-- Single Interactive Terminal Command Bar -->
+          <div style="display: flex; align-items: center; background: #040711; border: 1px solid rgba(0, 242, 254, 0.4); border-radius: 10px; padding: 6px 14px; margin-bottom: 1rem; box-shadow: var(--shadow-glow-cyan);">
+            <span id="termPromptPrefix" style="color: var(--accent-cyan); font-weight: 700; font-family: monospace; white-space: nowrap; margin-right: 10px; font-size: 0.88rem;">PS C:\></span>
+            <input type="text" id="termCmdInput" onkeydown="handleTermKey(event)" style="flex: 1; background: transparent; border: none; outline: none; color: #fff; font-family: monospace; font-size: 0.95rem;" placeholder="Nhập lệnh trực tiếp (cd, dir, ipconfig, tasklist, ping, git...)" autofocus>
+            <button class="btn" style="background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue)); color: #050b14; border: none; font-weight: 700; padding: 6px 16px; margin-left: 8px;" onclick="runTerminalCmd()">🚀 Run</button>
+          </div>
+        </div>
+
+        <!-- Terminal Output Screen -->
+        <div id="termOutputScreen" style="background: #040711; border: 1px solid var(--border-color); border-radius: 12px; padding: 1rem; font-family: 'Consolas', 'Courier New', monospace; font-size: 0.85rem; color: #34d399; height: 380px; max-height: 380px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; line-height: 1.4; flex: 1;">
+<span style="color: var(--accent-cyan);">=== Interactive Terminal Console Connected ===</span>
+<span style="color: var(--text-muted);">Nhập trực tiếp câu lệnh CMD/PowerShell vào thanh nhập lệnh trên. Gõ 'cd <đường_dẫn>' để chuyển thư mục.</span>
         </div>
       </div>
     </div>
@@ -150,6 +399,11 @@
   <script>
     let liveChart, historyChart;
     let configData = {};
+    let activeTab = 'daily';
+    let statsRawData = [];
+    let selectedHourlyDate = new Date().toISOString().split('T')[0];
+    let procSortBy = 'cpu';
+    let rawProcesses = [];
 
     function formatNumber(num, decimals = 2) {
       return (num || 0).toLocaleString('vi-VN', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
@@ -215,7 +469,7 @@
         }
       });
 
-      // History Bar Chart
+      // History / Stats Bar Chart
       const ctxHistory = document.getElementById('historyChart').getContext('2d');
       historyChart = new Chart(ctxHistory, {
         type: 'bar',
@@ -237,7 +491,27 @@
             x: { grid: { display: false }, ticks: { color: '#94a3b8' } },
             y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' }, beginAtZero: true }
           },
-          plugins: { legend: { display: false } }
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const index = context.dataIndex;
+                  const item = statsRawData[index];
+                  if (!item) return `Số điện: ${formatNumber(context.raw, 3)} kWh`;
+                  
+                  const lines = [
+                    `⚡ Số điện: ${formatNumber(item.total_kwh, 3)} kWh`,
+                    `💰 Tiền điện: ${formatVND(item.estimated_cost_vnd)} VND`,
+                    `🔥 CS Đỉnh: ${formatNumber(item.peak_power_w, 1)} W`,
+                    `📊 CS Trung bình: ${formatNumber(item.avg_power_w, 1)} W`,
+                    `⏱️ Chạy: ${formatTime(item.total_active_seconds)}`
+                  ];
+                  return lines;
+                }
+              }
+            }
+          }
         }
       });
     }
@@ -275,6 +549,53 @@
         document.getElementById('valAvgWatt').innerText = formatNumber(data.today_avg_w, 1) + ' W';
         document.getElementById('valPeakWatt').innerText = formatNumber(data.today_peak_w, 1) + ' W';
         document.getElementById('valUptime').innerText = formatTime(data.today_active_seconds);
+
+        // Thermal & Clock Speed UI Updates
+        const cpuTemp = data.cpu_temp_c || 0;
+        const gpuTemp = data.gpu_temp_c || 0;
+
+        document.getElementById('valCpuTemp').innerText = cpuTemp > 0 ? `${cpuTemp} °C` : `Chờ LHM`;
+        document.getElementById('valCpuClock').innerText = `Xung nhịp: ${data.cpu_clock_ghz || 0} GHz`;
+        document.getElementById('valCpuUsage').innerText = `${data.cpu_usage_pct || 0}%`;
+        document.getElementById('valRamUsage').innerText = `${data.ram_usage_pct || 0}%`;
+
+        document.getElementById('valGpuTemp').innerText = gpuTemp > 0 ? `${gpuTemp} °C` : `Chờ LHM`;
+        document.getElementById('valGpuClock').innerText = `Xung: ${data.gpu_clock_mhz || 0} MHz`;
+        document.getElementById('valGpuFan').innerText = `${data.gpu_fan_rpm || 0} RPM`;
+        document.getElementById('valGpuPower').innerText = `${formatNumber(data.gpu_power_w, 1)} W`;
+
+        // CPU Thermal Badge
+        const cpuBadge = document.getElementById('cpuTempBadge');
+        if (cpuTemp >= 85) {
+          cpuBadge.style.background = 'rgba(239, 68, 68, 0.2)';
+          cpuBadge.style.color = 'var(--accent-danger)';
+          cpuBadge.innerText = '🔥 Nóng (>85°C)';
+        } else if (cpuTemp >= 70) {
+          cpuBadge.style.background = 'rgba(245, 158, 11, 0.2)';
+          cpuBadge.style.color = 'var(--accent-amber)';
+          cpuBadge.innerText = '⚡ Ấm (70-85°C)';
+        } else {
+          cpuBadge.style.background = 'rgba(16, 185, 129, 0.15)';
+          cpuBadge.style.color = 'var(--accent-green)';
+          cpuBadge.innerText = '✅ Mát (<70°C)';
+        }
+
+        // GPU Thermal Badge
+        const gpuBadge = document.getElementById('gpuTempBadge');
+        if (gpuTemp >= 85) {
+          gpuBadge.style.background = 'rgba(239, 68, 68, 0.2)';
+          gpuBadge.style.color = 'var(--accent-danger)';
+          gpuBadge.innerText = '🔥 Nóng (>85°C)';
+        } else if (gpuTemp >= 70) {
+          gpuBadge.style.background = 'rgba(245, 158, 11, 0.2)';
+          gpuBadge.style.color = 'var(--accent-amber)';
+          gpuBadge.innerText = '⚡ Ấm (70-85°C)';
+        } else {
+          gpuBadge.style.background = 'rgba(16, 185, 129, 0.15)';
+          gpuBadge.style.color = 'var(--accent-green)';
+          gpuBadge.innerText = '✅ Mát (<70°C)';
+        }
+
       } catch (err) {
         console.error('Fetch live error', err);
       }
@@ -295,18 +616,250 @@
       }
     }
 
+    function switchStatsTab(tab) {
+      activeTab = tab;
+      document.getElementById('tabHourly').classList.toggle('active', tab === 'hourly');
+      document.getElementById('tabDaily').classList.toggle('active', tab === 'daily');
+      document.getElementById('tabMonthly').classList.toggle('active', tab === 'monthly');
+
+      const datePicker = document.getElementById('hourlyDatePicker');
+      if (tab === 'hourly') {
+        datePicker.style.display = 'inline-block';
+        if (!datePicker.value) {
+          datePicker.value = selectedHourlyDate;
+        }
+      } else {
+        datePicker.style.display = 'none';
+      }
+
+      updateHistoryChart();
+    }
+
+    function onHourlyDateChange() {
+      const picker = document.getElementById('hourlyDatePicker');
+      if (picker.value) {
+        selectedHourlyDate = picker.value;
+        updateHistoryChart();
+      }
+    }
+
     async function updateHistoryChart() {
       try {
-        const res = await fetch('/api/history?days=14');
-        const history = await res.json();
-        
-        // Sort ascending by date
-        const sorted = history.reverse();
-        historyChart.data.labels = sorted.map(h => h.date);
-        historyChart.data.datasets[0].data = sorted.map(h => h.total_kwh);
+        let url = '';
+        const titleEl = document.getElementById('statsChartTitle');
+        let bg = 'rgba(16, 185, 129, 0.7)';
+        let border = '#10b981';
+
+        if (activeTab === 'hourly') {
+          url = `/api/stats/hourly?date=${selectedHourlyDate}`;
+          titleEl.innerText = `🕒 Thống Kê Số Điện Theo Giờ (${selectedHourlyDate})`;
+          bg = 'rgba(0, 242, 254, 0.7)';
+          border = '#00f2fe';
+        } else if (activeTab === 'monthly') {
+          url = '/api/stats/monthly?months=12';
+          titleEl.innerText = '📆 Thống Kê Số Điện Theo Tháng (kWh & Tiền Điện EVN)';
+          bg = 'rgba(168, 85, 247, 0.7)';
+          border = '#a855f7';
+        } else {
+          url = '/api/stats/daily?days=14';
+          titleEl.innerText = '📅 Thống Kê Số Điện Theo Ngày (kWh)';
+          bg = 'rgba(16, 185, 129, 0.7)';
+          border = '#10b981';
+        }
+
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (activeTab === 'hourly') {
+          statsRawData = data;
+          historyChart.data.labels = data.map(h => h.hour);
+          historyChart.data.datasets[0].data = data.map(h => h.total_kwh);
+        } else if (activeTab === 'monthly') {
+          const sorted = data.slice().reverse();
+          statsRawData = sorted;
+          historyChart.data.labels = sorted.map(m => m.month);
+          historyChart.data.datasets[0].data = sorted.map(m => m.total_kwh);
+        } else {
+          const sorted = data.slice().reverse();
+          statsRawData = sorted;
+          historyChart.data.labels = sorted.map(d => d.date);
+          historyChart.data.datasets[0].data = sorted.map(d => d.total_kwh);
+        }
+
+        historyChart.data.datasets[0].backgroundColor = bg;
+        historyChart.data.datasets[0].borderColor = border;
         historyChart.update();
       } catch (err) {
         console.error('Fetch history error', err);
+      }
+    }
+
+    let selectedPids = new Set();
+
+    async function updateProcesses() {
+      try {
+        const res = await fetch(`/api/processes?limit=60&sort=${procSortBy}`);
+        rawProcesses = await res.json();
+        renderProcessTable();
+      } catch (err) {
+        console.error('Fetch processes error', err);
+      }
+    }
+
+    function setProcSort(sort) {
+      procSortBy = sort;
+      document.getElementById('procSortCpu').classList.toggle('active', sort === 'cpu');
+      document.getElementById('procSortMem').classList.toggle('active', sort === 'memory');
+      updateProcesses();
+    }
+
+    function toggleProcSelection(pid, cb) {
+      if (cb.checked) {
+        selectedPids.add(pid);
+      } else {
+        selectedPids.delete(pid);
+      }
+      updateBatchProcBar();
+    }
+
+    function toggleSelectAllProcs(selectAllCb) {
+      const visibleCbs = document.querySelectorAll('.proc-cb');
+      visibleCbs.forEach(cb => {
+        const pid = parseInt(cb.value);
+        cb.checked = selectAllCb.checked;
+        if (selectAllCb.checked) {
+          selectedPids.add(pid);
+        } else {
+          selectedPids.delete(pid);
+        }
+      });
+      updateBatchProcBar();
+    }
+
+    function clearSelectedProcs() {
+      selectedPids.clear();
+      const selectAll = document.getElementById('selectAllProcs');
+      if (selectAll) selectAll.checked = false;
+      document.querySelectorAll('.proc-cb').forEach(cb => cb.checked = false);
+      updateBatchProcBar();
+    }
+
+    function updateBatchProcBar() {
+      const bar = document.getElementById('batchProcBar');
+      const countText = document.getElementById('selectedProcCountText');
+      if (!bar) return;
+
+      if (selectedPids.size > 0) {
+        bar.style.display = 'flex';
+        countText.innerText = `Đã chọn ${selectedPids.size} tiến trình`;
+      } else {
+        bar.style.display = 'none';
+      }
+    }
+
+    function renderProcessTable() {
+      const tbody = document.getElementById('procTableBody');
+      const search = (document.getElementById('procSearchInput').value || '').toLowerCase().trim();
+      
+      let filtered = rawProcesses;
+      if (search) {
+        filtered = rawProcesses.filter(p => p.name.toLowerCase().includes(search) || p.pid.toString().includes(search));
+      }
+
+      tbody.innerHTML = '';
+      if (!filtered || filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color: var(--text-muted); padding: 1.5rem;">Không tìm thấy tiến trình phù hợp.</td></tr>`;
+        return;
+      }
+
+      filtered.forEach(p => {
+        const tr = document.createElement('tr');
+        const isChecked = selectedPids.has(p.pid);
+        tr.innerHTML = `
+          <td style="text-align: center;"><input type="checkbox" class="proc-cb" value="${p.pid}" ${isChecked ? 'checked' : ''} onchange="toggleProcSelection(${p.pid}, this)" style="cursor: pointer; transform: scale(1.15);"></td>
+          <td style="color: var(--text-muted); font-family: monospace;">${p.pid}</td>
+          <td><strong style="color: #fff;">${p.name}</strong></td>
+          <td><span style="color: ${p.cpu_percent > 10 ? 'var(--accent-danger)' : 'var(--accent-cyan)'}; font-weight:700;">${p.cpu_percent}%</span></td>
+          <td><strong style="color: var(--accent-purple);">${p.memory_mb} MB</strong></td>
+          <td style="color: var(--text-muted); font-size: 0.8rem; max-width: 260px; overflow: hidden; text-overflow: ellipsis;" title="${p.exe}">${p.exe || 'System/Background'}</td>
+          <td style="text-align: right;">
+            <button class="btn" style="background: rgba(239,68,68,0.15); color: var(--accent-danger); border-color: rgba(239,68,68,0.4); padding: 4px 10px; font-size: 0.8rem;" onclick="killApp(${p.pid}, '${p.name.replace(/'/g, "\\'")}')">🛑 Diệt App</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+      updateBatchProcBar();
+    }
+
+    async function killSelectedApps() {
+      if (selectedPids.size === 0) return;
+      const pidsArray = Array.from(selectedPids);
+
+      if (!confirm(`Bạn có chắc chắn muốn buộc dừng (Kill) ${pidsArray.length} tiến trình đã chọn?`)) {
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/processes/kill', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pids: pidsArray })
+        });
+        const data = await res.json();
+
+        const toast = document.getElementById('procToast');
+        toast.style.display = 'flex';
+        if (data.status === 'success') {
+          toast.style.background = 'rgba(16, 185, 129, 0.1)';
+          toast.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+          toast.style.color = '#34d399';
+          toast.innerText = `✅ ${data.message}`;
+        } else {
+          toast.style.background = 'rgba(239, 68, 68, 0.1)';
+          toast.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+          toast.style.color = '#f87171';
+          toast.innerText = `⚠️ ${data.message}`;
+        }
+
+        setTimeout(() => { toast.style.display = 'none'; }, 4000);
+        clearSelectedProcs();
+        await updateProcesses();
+      } catch (err) {
+        alert('Lỗi khi gửi yêu cầu diệt nhiều tiến trình: ' + err);
+      }
+    }
+
+    async function killApp(pid, name) {
+      if (!confirm(`Bạn có chắc chắn muốn buộc dừng (Kill) ứng dụng ${name} (PID: ${pid})?`)) {
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/processes/kill', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pid: pid })
+        });
+        const data = await res.json();
+        
+        const toast = document.getElementById('procToast');
+        toast.style.display = 'flex';
+        if (data.status === 'success') {
+          toast.style.background = 'rgba(16, 185, 129, 0.1)';
+          toast.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+          toast.style.color = '#34d399';
+          toast.innerText = `✅ ${data.message}`;
+        } else {
+          toast.style.background = 'rgba(239, 68, 68, 0.1)';
+          toast.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+          toast.style.color = '#f87171';
+          toast.innerText = `⚠️ ${data.message}`;
+        }
+
+        setTimeout(() => { toast.style.display = 'none'; }, 4000);
+        await updateProcesses();
+      } catch (err) {
+        alert('Lỗi khi gửi yêu cầu diệt tiến trình: ' + err);
       }
     }
 
@@ -371,22 +924,380 @@
       closeConfigModal();
       await fetchConfig();
       await updateLive();
+      await updateHistoryChart();
+    }
+
+    async function updateComparison() {
+      try {
+        const res = await fetch('/api/stats/comparison');
+        const data = await res.json();
+        
+        const day = data.day;
+        const month = data.month;
+
+        document.getElementById('valTodayKwhSub').innerText = `${formatNumber(day.today_kwh, 3)} kWh`;
+        document.getElementById('valYestKwhSub').innerText = `${formatNumber(day.yesterday_kwh, 3)} kWh`;
+        
+        const dayBadge = document.getElementById('dayTrendBadge');
+        const dayIcon = document.getElementById('dayTrendIcon');
+        const daySign = day.diff_kwh > 0 ? '+' : '';
+        document.getElementById('valTodayVsYestKwh').innerText = `${daySign}${formatNumber(day.diff_kwh, 3)} kWh`;
+        document.getElementById('valTodayVsYestCost').innerText = `Chênh lệch: ${daySign}${formatVND(day.diff_cost)} VND`;
+
+        if (day.trend === 'up') {
+          dayBadge.style.background = 'rgba(239, 68, 68, 0.15)';
+          dayBadge.style.color = 'var(--accent-danger)';
+          dayBadge.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+          dayBadge.innerText = `🔺 +${day.percent}% (Tăng)`;
+          dayIcon.innerText = '📈';
+        } else if (day.trend === 'down') {
+          dayBadge.style.background = 'rgba(16, 185, 129, 0.15)';
+          dayBadge.style.color = 'var(--accent-green)';
+          dayBadge.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+          dayBadge.innerText = `🔻 ${day.percent}% (Tiết kiệm)`;
+          dayIcon.innerText = '📉';
+        } else {
+          dayBadge.style.background = 'rgba(255, 255, 255, 0.08)';
+          dayBadge.style.color = 'var(--text-muted)';
+          dayBadge.innerText = '0% (Bằng nhau)';
+          dayIcon.innerText = '⚖️';
+        }
+
+        document.getElementById('valCurMonthKwhSub').innerText = `${formatNumber(month.current_kwh, 3)} kWh`;
+        document.getElementById('valLastMonthKwhSub').innerText = `${formatNumber(month.last_kwh, 3)} kWh`;
+
+        const monthBadge = document.getElementById('monthTrendBadge');
+        const monthIcon = document.getElementById('monthTrendIcon');
+        const monthSign = month.diff_kwh > 0 ? '+' : '';
+        document.getElementById('valCurVsLastMonthKwh').innerText = `${monthSign}${formatNumber(month.diff_kwh, 3)} kWh`;
+        document.getElementById('valCurVsLastMonthCost').innerText = `Chênh lệch: ${monthSign}${formatVND(month.diff_cost)} VND`;
+
+        if (month.trend === 'up') {
+          monthBadge.style.background = 'rgba(239, 68, 68, 0.15)';
+          monthBadge.style.color = 'var(--accent-danger)';
+          monthBadge.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+          monthBadge.innerText = `🔺 +${month.percent}% (Tăng)`;
+          monthIcon.innerText = '📈';
+        } else if (month.trend === 'down') {
+          monthBadge.style.background = 'rgba(16, 185, 129, 0.15)';
+          monthBadge.style.color = 'var(--accent-green)';
+          monthBadge.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+          monthBadge.innerText = `🔻 ${month.percent}% (Tiết kiệm)`;
+          monthIcon.innerText = '📉';
+        } else {
+          monthBadge.style.background = 'rgba(255, 255, 255, 0.08)';
+          monthBadge.style.color = 'var(--text-muted)';
+          monthBadge.innerText = '0% (Bằng nhau)';
+          monthIcon.innerText = '⚖️';
+        }
+
+      } catch (err) {
+        console.error('Fetch comparison error', err);
+      }
+    }
+
+    async function updateDisks() {
+      try {
+        const res = await fetch('/api/system/disks');
+        const disks = await res.json();
+        
+        const container = document.getElementById('diskListContainer');
+        const alertBadge = document.getElementById('diskAlertBadge');
+
+        container.innerHTML = '';
+        let hasWarning = false;
+        let hasCritical = false;
+
+        disks.forEach(d => {
+          if (d.status === 'critical') hasCritical = true;
+          if (d.status === 'warning') hasWarning = true;
+
+          let barColor = 'var(--accent-green)';
+          let badgeText = 'Tốt';
+          let badgeBg = 'rgba(16, 185, 129, 0.15)';
+          let badgeColor = 'var(--accent-green)';
+
+          if (d.status === 'warning') {
+            barColor = 'var(--accent-amber)';
+            badgeText = 'Sắp đầy (>85%)';
+            badgeBg = 'rgba(245, 158, 11, 0.15)';
+            badgeColor = 'var(--accent-amber)';
+          } else if (d.status === 'critical') {
+            barColor = 'var(--accent-danger)';
+            badgeText = '⚠️ Đầy (>95%)';
+            badgeBg = 'rgba(239, 68, 68, 0.15)';
+            badgeColor = 'var(--accent-danger)';
+          }
+
+          const card = document.createElement('div');
+          card.style.background = 'rgba(0, 0, 0, 0.25)';
+          card.style.border = '1px solid var(--border-color)';
+          card.style.borderRadius = '12px';
+          card.style.padding = '1rem';
+
+          card.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+              <div>
+                <strong style="font-size: 1.1rem; color: #fff;">Ổ ${d.mountpoint || d.device}</strong>
+                <span style="font-size: 0.78rem; color: var(--text-muted); margin-left: 6px;">(${d.fstype})</span>
+              </div>
+              <span style="font-size: 0.78rem; font-weight: 700; padding: 2px 8px; border-radius: 12px; background: ${badgeBg}; color: ${badgeColor};">${badgeText}</span>
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.4rem;">
+              <span>Đã dùng: <strong style="color: #fff;">${d.used_gb} GB</strong> / ${d.total_gb} GB</span>
+              <span>Còn trống: <strong style="color: var(--accent-cyan);">${d.free_gb} GB</strong></span>
+            </div>
+
+            <div style="width: 100%; background: rgba(255, 255, 255, 0.08); height: 8px; border-radius: 4px; overflow: hidden;">
+              <div style="width: ${d.percent}%; background: ${barColor}; height: 100%; border-radius: 4px; transition: width 0.5s ease;"></div>
+            </div>
+            <div style="text-align: right; font-size: 0.78rem; color: var(--text-muted); margin-top: 4px;">Tỷ lệ: ${d.percent}%</div>
+          `;
+
+          container.appendChild(card);
+        });
+
+        if (hasCritical) {
+          alertBadge.className = 'status-badge disconnected';
+          alertBadge.innerText = '⚠️ Cảnh báo: Ổ cứng sắp hết dung lượng!';
+        } else if (hasWarning) {
+          alertBadge.className = 'status-badge';
+          alertBadge.style.color = 'var(--accent-amber)';
+          alertBadge.innerText = '⚡ Chú ý: Có ổ đĩa sử dụng >85%';
+        } else {
+          alertBadge.className = 'status-badge connected';
+          alertBadge.innerText = '✅ Tất cả ổ đĩa hoạt động bình thường';
+        }
+
+      } catch (err) {
+        console.error('Fetch disks error', err);
+      }
+    }
+
+    async function sendAudioCmd(action) {
+      try {
+        const res = await fetch('/api/system/audio', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: action })
+        });
+        const data = await res.json();
+        showAudioToast(data.message, data.status === 'success');
+      } catch (err) {
+        showAudioToast('Lỗi gửi lệnh âm thanh: ' + err, false);
+      }
+    }
+
+    async function setVolumeLevel(level) {
+      document.getElementById('volValText').innerText = level + '%';
+      document.getElementById('volRange').value = level;
+      try {
+        const res = await fetch('/api/system/audio', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'set_level', level: parseInt(level) })
+        });
+        const data = await res.json();
+        showAudioToast(data.message, data.status === 'success');
+      } catch (err) {
+        showAudioToast('Lỗi chỉnh âm lượng: ' + err, false);
+      }
+    }
+
+    function showAudioToast(msg, isSuccess) {
+      const toast = document.getElementById('audioToast');
+      if (!toast) return;
+      toast.style.display = 'inline-flex';
+      toast.style.color = isSuccess ? 'var(--accent-green)' : 'var(--accent-danger)';
+      toast.innerText = (isSuccess ? '✅ ' : '⚠️ ') + msg;
+      setTimeout(() => { toast.style.display = 'none'; }, 3000);
+    }
+
+    async function sendPcAction(action) {
+      try {
+        const res = await fetch('/api/system/pc_action', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: action })
+        });
+        const data = await res.json();
+        showPcActionToast(data.message, data.status === 'success');
+      } catch (err) {
+        showPcActionToast('Lỗi gửi lệnh PC: ' + err, false);
+      }
+    }
+
+    function confirmPcAction(action, confirmMsg) {
+      if (confirm(confirmMsg)) {
+        sendPcAction(action);
+      }
+    }
+
+    function showPcActionToast(msg, isSuccess) {
+      const toast = document.getElementById('pcActionToast');
+      if (!toast) return;
+      toast.style.display = 'inline-flex';
+      toast.style.color = isSuccess ? 'var(--accent-green)' : 'var(--accent-danger)';
+      toast.innerText = (isSuccess ? '✅ ' : '⚠️ ') + msg;
+      setTimeout(() => { toast.style.display = 'none'; }, 4000);
+    }
+
+    let currentTerminalCwd = '';
+
+    async function runTerminalCmd() {
+      const cmdInput = document.getElementById('termCmdInput');
+      const output = document.getElementById('termOutputScreen');
+      const promptPrefix = document.getElementById('termPromptPrefix');
+
+      const command = (cmdInput.value || '').trim();
+      if (!command) return;
+
+      const timestamp = new Date().toLocaleTimeString('vi-VN');
+      const currentPromptText = promptPrefix ? promptPrefix.innerText : 'PS C:\\>';
+
+      output.innerHTML += `\n\n<span style="color: var(--accent-cyan); font-weight:700;">[${timestamp}] ${currentPromptText} ${escapeHtml(command)}</span>\n<span id="termPending" style="color: var(--accent-amber);">⏳ Đang thực thi...</span>`;
+      output.scrollTop = output.scrollHeight;
+      cmdInput.value = '';
+
+      try {
+        const res = await fetch('/api/terminal/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ command: command, cwd: currentTerminalCwd })
+        });
+        const data = await res.json();
+
+        if (data.cwd) {
+          currentTerminalCwd = data.cwd;
+          if (promptPrefix) {
+            promptPrefix.innerText = `PS ${data.cwd}>`;
+          }
+        }
+
+        const pending = document.getElementById('termPending');
+        if (pending) pending.remove();
+
+        if (data.status === 'success') {
+          output.innerHTML += `\n<span style="color: #34d399;">${escapeHtml(data.stdout || 'Thành công (Không có đầu ra stdout)')}</span>`;
+        } else {
+          output.innerHTML += `\n<span style="color: var(--accent-danger);">${escapeHtml(data.stderr || data.stdout || 'Lỗi thực thi lệnh!')}</span>`;
+        }
+      } catch (err) {
+        const pending = document.getElementById('termPending');
+        if (pending) pending.remove();
+        output.innerHTML += `\n<span style="color: var(--accent-danger);">⚠️ Lỗi kết nối Terminal Server: ${escapeHtml(err.toString())}</span>`;
+      }
+
+      output.scrollTop = output.scrollHeight;
+    }
+
+    function handleTermKey(e) {
+      if (e.key === 'Enter') {
+        runTerminalCmd();
+      }
+    }
+
+    function clearTerminalOutput() {
+      const output = document.getElementById('termOutputScreen');
+      output.innerHTML = '<span style="color: var(--accent-cyan);">=== Terminal Output Cleared ===</span>';
+    }
+
+    function escapeHtml(str) {
+      return (str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     }
 
     function exportCSV() {
-      window.location.href = '/api/export';
+      let url = `/api/export?type=${activeTab}`;
+      if (activeTab === 'hourly') {
+        url += `&date=${selectedHourlyDate}`;
+      }
+      window.location.href = url;
+    }
+
+    async function startTimer(minutes, mode) {
+      try {
+        const res = await fetch('/api/system/timer', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'start', minutes: minutes, mode: mode })
+        });
+        const data = await res.json();
+        showTimerToast(data.message, data.status === 'success');
+        updateTimerStatus();
+      } catch (err) {
+        showTimerToast('Lỗi đặt hẹn giờ: ' + err, false);
+      }
+    }
+
+    async function cancelTimer() {
+      try {
+        const res = await fetch('/api/system/timer', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'cancel' })
+        });
+        const data = await res.json();
+        showTimerToast(data.message, data.status === 'success');
+        updateTimerStatus();
+      } catch (err) {
+        showTimerToast('Lỗi hủy hẹn giờ: ' + err, false);
+      }
+    }
+
+    async function updateTimerStatus() {
+      try {
+        const res = await fetch('/api/system/timer');
+        const data = await res.json();
+        const box = document.getElementById('timerActiveBox');
+        const text = document.getElementById('timerStatusText');
+
+        if (!box || !text) return;
+
+        if (data.active && data.remaining_seconds > 0) {
+          box.style.display = 'flex';
+          const hrs = Math.floor(data.remaining_seconds / 3600);
+          const mins = Math.floor((data.remaining_seconds % 3600) / 60);
+          const secs = data.remaining_seconds % 60;
+          const timeStr = `${hrs > 0 ? hrs + 'h ' : ''}${mins}m ${secs}s`;
+          const modeLabel = data.mode === 'sleep' ? '🌙 Chế độ Sleep' : '🛑 Tắt máy';
+          text.innerText = `⏳ ${modeLabel} sau: ${timeStr}`;
+        } else {
+          box.style.display = 'none';
+        }
+      } catch (err) {
+        console.error('Fetch timer status error', err);
+      }
+    }
+
+    function showTimerToast(msg, isSuccess) {
+      const toast = document.getElementById('timerToast');
+      if (!toast) return;
+      toast.style.display = 'inline-flex';
+      toast.style.color = isSuccess ? 'var(--accent-green)' : 'var(--accent-danger)';
+      toast.innerText = (isSuccess ? '✅ ' : '⚠️ ') + msg;
+      setTimeout(() => { toast.style.display = 'none'; }, 3000);
     }
 
     window.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('hourlyDatePicker').value = selectedHourlyDate;
       initCharts();
       fetchConfig();
       updateLive();
       updateRecentChart();
       updateHistoryChart();
+      updateProcesses();
+      updateComparison();
+      updateDisks();
+      updateTimerStatus();
 
       setInterval(updateLive, 2000);
       setInterval(updateRecentChart, 3000);
-      setInterval(updateHistoryChart, 30000);
+      setInterval(updateHistoryChart, 15000);
+      setInterval(updateProcesses, 2500);
+      setInterval(updateComparison, 10000);
+      setInterval(updateDisks, 10000);
+      setInterval(updateTimerStatus, 1000);
     });
   </script>
 </body>
